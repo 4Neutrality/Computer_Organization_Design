@@ -5,13 +5,15 @@
 # @version 02.06.15
 #
 # Register Legend:
-# 	$t0  - holds number value 
-# 	$t1  - holds byte position
-# 	$t2  - holds the bit to sum
+# 	$t0  - holds number value to be printed
+# 	$t1  - holds byte position to be printed
+# 	$t2  - holds the bit to sum to be printed
 # 	$t3  - holds number value to shift
 # 	$t4  - holds byte position multiplied by eight
 # 	$t5  - holds value to increment by
 # 	$t6  - holds counter
+# 	$t7  - holds bit mask
+# 	$t8  - holds value 8
 # 	$a0  - holds value or address for system calls
 # 	$v0  - syscall parameter
 
@@ -28,6 +30,7 @@ nl:  		.asciiz "\n"
 
 .text
 main:
+############################ PRINTING & READING ###############################
 # Print request for an integer #
 la $a0, int_request	# get address of, associated with int_request
 li $v0, 4		# print string code number = 4
@@ -48,9 +51,6 @@ syscall			# execute system call
 # Move byte position into register $t1 #
 move $t1, $v0
 
-# Multiply byte position by eight to get shift amount #
-sll $t4, $t1, 3		# $t4 = $t1 * 8
-
 # Print request for bit to sum #
 la $a0, bit_request	# get address of, associated with bit_request
 li $v0, 4		# print string code number = 4	
@@ -61,46 +61,61 @@ syscall			# execute system call
 # Move bit to sum into regiser $t2 #
 move $t2, $v0
 
-# Move num value into $t3, which will be used for bit shifting #
+############################# SHIFTING & BIT MASK #############################
+# Move num value into $t3, which will be shifted to byte position #
 move $t3, $t0
+
+# Create bit mask from bit sum value #
+move $t7, $t2
+sll $t7, $t2, 31	# shift left by 31 0's
+sra $t7, $t7, 31	# $t7 is now all 0's or 1's
+# Apply bit mask #
+xor $t3, $t3, $t7
+
+# Multiply byte position by eight to get shift amount #
+sll $t4, $t1, 3		# $t4 = $t1 * 8
+
 # Shift to desired byte position #
 srlv $t3, $t3, $t4
 
-################### 8 Steps... I'm starting to get bitter #####################
-and $t5, $t3, $t2    	# $t5 = $t3 AND $t2
+################################### COUNTING ##################################
+and $t5, $t3, 1		# $t5 = $t3 AND 1
 add $t6, $t6, $t5	# increment counter
 srl $t3, $t3, 1		# shift num value by 1
 
-and $t5, $t3, $t2    	# $t5 = $t3 AND $t2
+and $t5, $t3, 1		# $t5 = $t3 AND 1
 add $t6, $t6, $t5	# increment counter
 srl $t3, $t3, 1		# shift num value by 1
 
-and $t5, $t3, $t2    	# $t5 = $t3 AND $t2
+and $t5, $t3, 1		# $t5 = $t3 AND 1
 add $t6, $t6, $t5	# increment counter
 srl $t3, $t3, 1		# shift num value by 1
 
-and $t5, $t3, $t2    	# $t5 = $t3 AND $t2
+and $t5, $t3, 1		# $t5 = $t3 AND 1
 add $t6, $t6, $t5	# increment counter
 srl $t3, $t3, 1		# shift num value by 1
 
-and $t5, $t3, $t2    	# $t5 = $t3 AND $t2
+and $t5, $t3, 1		# $t5 = $t3 AND 1
 add $t6, $t6, $t5	# increment counter
 srl $t3, $t3, 1		# shift num value by 1
 
-and $t5, $t3, $t2    	# $t5 = $t3 AND $t2
+and $t5, $t3, 1		# $t5 = $t3 AND 1
 add $t6, $t6, $t5	# increment counter
 srl $t3, $t3, 1		# shift num value by 1
 
-and $t5, $t3, $t2    	# $t5 = $t3 AND $t2
+and $t5, $t3, 1		# $t5 = $t3 AND 1
 add $t6, $t6, $t5	# increment counter
 srl $t3, $t3, 1		# shift num value by 1
 
-and $t5, $t3, $t2    	# $t5 = $t3 AND $t2
+and $t5, $t3, 1		# $t5 = $t3 AND 1
 add $t6, $t6, $t5	# increment counter
 srl $t3, $t3, 1		# shift num value by 1
-################### End 8 Steps... Yep, I'm bitter ############################
 
-# Print result #
+# Subtract counter from 8 to get bit sum #
+li $t8, 8 
+sub $t6, $t8, $t6	# $t6 = 8 - $t6
+
+############################### PRINT RESULTS #################################
 la $a0, result1		# get address of, associated with result1
 li $v0, 4		# print string code number = 4
 syscall			# execute system call
